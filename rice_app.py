@@ -1,46 +1,43 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+import matplotlib
+matplotlib.rcParams['font.family'] = 'Malgun Gothic'  # 윈도우에서 한글 폰트 설정
 
-# ✅ 한글 폰트 설정 (Windows용)
-plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows: 'Malgun Gothic', Mac: 'AppleGothic', Linux/Streamlit Cloud: 'DejaVu Sans'
-plt.rcParams['axes.unicode_minus'] = False     # 마이너스 깨짐 방지
+# 사용자 정의 함수 (완만한 ^ 그래프)
+def custom_yield(rainfall, temperature, ph):
+    base = (rainfall * 0.01) + (temperature * 2)
 
-# 📊 데이터 불러오기
-df = pd.read_csv("rice_data.csv")
+    # 완만하게 증가/감소하는 구조로 변경 (기울기 ±5)
+    if ph <= 5.8:
+        return base + (ph - 5.0) * 5   # 양의 기울기
+    else:
+        return base + (5.8 - ph) * 5   # 음의 기울기
 
-# 🎯 사용자 입력
-st.title("쌀 생산량 예측 웹앱")
-st.markdown("4~10월 기후 정보와 pH 농도를 기반으로 **생산량(톤)** 을 예측합니다.")
+# Streamlit UI
+st.title("🌾 쌀 생산량 예측기")
+st.write("강수량과 기온을 선택하면 pH 농도별 예상 생산량을 확인할 수 있어요.")
 
-temperature = st.number_input("예상 평균 기온 (°C)", min_value=15.0, max_value=35.0, step=0.1, value=21.0)
-rainfall = st.number_input("예상 총 강수량 (mm)", min_value=0.0, max_value=2000.0, step=10.0, value=1000.0)
+# 슬라이더 입력
+rain_input = st.slider("강수량 (mm)", 500, 2000, step=10, value=1200)
+temp_input = st.slider("기온 (℃)", 15.0, 30.0, step=0.1, value=22.0)
 
-# ✅ 학습: ph별로 모델 만들기
-target = '생산량'
-feature_cols = ['기온', '강수량']
-ph_values = sorted(df['ph'].unique())
+# pH 범위
+ph_range = np.linspace(5.0, 7.0, 40)
 
+# 예측
+predicted_yields = [custom_yield(rain_input, temp_input, ph) for ph in ph_range]
+
+# 그래프 출력
 fig, ax = plt.subplots()
-for ph in ph_values:
-    df_ph = df[df['ph'] == ph]
-    X = df_ph[feature_cols]
-    y = df_ph[target]
-    
-    model = LinearRegression()
-    model.fit(X, y)
-
-    pred_y = model.predict([[temperature, rainfall]])
-    ax.scatter(temperature, pred_y, label=f"ph {ph}: {pred_y[0]:.1f}톤")
-
-# 🔍 그래프 설정
-ax.set_xlabel("기온 (°C)")
-ax.set_ylabel("예측 생산량 (톤)")
-ax.set_title("pH 농도별 쌀 생산량 예측")
-ax.set_xlim(20.3, 22.5)
-ax.legend()
-
-# 📈 출력
+ax.plot(ph_range, predicted_yields, marker='o', color='darkblue')
+ax.set_xlabel("pH 농도")
+ax.set_ylabel("예측 쌀 생산량 (톤)")
+ax.set_title("pH 농도에 따른 예측 생산량")
+ax.grid(True)
 st.pyplot(fig)
+
+# 최고 생산량 출력
+max_yield = max(predicted_yields)
+max_ph = ph_range[np.argmax(predicted_yields)]
+st.success(f"🌟 최고 생산량은 {max_yield:,.0f} 톤 (pH = {max_ph:.2f}) 기준")
