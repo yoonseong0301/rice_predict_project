@@ -4,18 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
-import urllib.request
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
-# 한글 폰트 설정
+# 한글 폰트 설정 (다운로드 제거)
 plt.rcParams['axes.unicode_minus'] = False
-if not any(f.name == 'NanumGothic' for f in fm.fontManager.ttflist):
-    font_url = "https://github.com/naver/nanumfont/blob/master/ttf/NanumGothic.ttf?raw=true"
-    font_path = os.path.join(os.getcwd(), "NanumGothic.ttf")
-    urllib.request.urlretrieve(font_url, font_path)
-    fm.fontManager.addfont(font_path)
-plt.rcParams['font.family'] = 'NanumGothic'
+plt.rcParams['font.family'] = 'DejaVu Sans'  # Streamlit Cloud에서 잘 보이는 기본 폰트 사용
 
 # 데이터 로드
 df = pd.read_csv("rice_data.csv")
